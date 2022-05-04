@@ -49,4 +49,8 @@ public class Attendance extends BaseModel implements Serializable {
     @JoinColumn(name = "attendance_type_id", referencedColumnName = "attendance_type_id")
     private AttendanceType attendanceType;
 
+    @ManyToOne
+    @JoinColumn(name = "leave_detail_id", referencedColumnName = "leave_detail_id")
+    private LeaveDetail leaveDetail;
+
 }

@@ -9,6 +9,7 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.sql.Blob;
 import java.util.Date;
 
 @EqualsAndHashCode(callSuper = true)
@@ -38,14 +39,26 @@ public class LeaveDetail extends BaseModel implements Serializable {
     private Date endDate;
 
     @Column(name = "total_days_off")
-    private Integer totalDaysOff;
+    private int totalDaysOff;
+
+    @Column(name = "document")
+    private Blob document;
+
+    @Column(name = "sub_partner_id")
+    private String subPartnerId;
+
+    @Column(name = "supervisor_id")
+    private String supervisorId;
+
+    @Column(name = "hrd_id")
+    private String hrdId;
+
+    @Type(type = "text")
+    @Column(name = "reason")
+    private String reason;
 
     @ManyToOne
-    @JoinColumn(name = "attendance_id", referencedColumnName = "attendance_id")
-    private Attendance attendance;
-
-    @ManyToOne
-    @JoinColumn(name = "sub_partner_id", referencedColumnName = "employee_id")
-    private Employee subPartner;
+    @JoinColumn(name = "employeeId", referencedColumnName = "employee_id")
+    private Employee employee;
 
 }

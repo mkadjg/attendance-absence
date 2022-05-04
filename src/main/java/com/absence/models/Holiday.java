@@ -24,14 +24,14 @@ public class Holiday extends BaseModel implements Serializable {
     @Column(name = "holiday_id", nullable = false, unique = true)
     private String holidayId;
 
-    @Column(name = "division_name")
+    @Column(name = "holiday_name")
     private String holidayName;
 
-    @Column(name = "division_desc")
+    @Column(name = "holiday_desc")
     private String holidayDesc;
 
     @Temporal(TemporalType.DATE)
-    @Column(name = "division_date")
+    @Column(name = "holiday_date")
     private Date holidayDate;
 
 }

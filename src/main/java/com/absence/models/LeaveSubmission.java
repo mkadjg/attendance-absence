@@ -40,13 +40,22 @@ public class LeaveSubmission extends BaseModel implements Serializable {
     @Column(name = "total_days_off")
     private Integer totalDaysOff;
 
+    @Column(name = "sub_partner_id")
+    private String subPartnerId;
+
+    @Column(name = "supervisor_id")
+    private String supervisorId;
+
+    @Column(name = "hrd_id")
+    private String hrdId;
+
+    @Type(type = "text")
+    @Column(name = "reason")
+    private String reason;
+
     @ManyToOne
     @JoinColumn(name = "submission_status_id", referencedColumnName = "submission_status_id")
     private SubmissionStatus submissionStatus;
-
-    @ManyToOne
-    @JoinColumn(name = "sub_partner_id", referencedColumnName = "employee_id")
-    private Employee subPartner;
 
     @ManyToOne
     @JoinColumn(name = "employee_id", referencedColumnName = "employee_id")

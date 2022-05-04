@@ -11,6 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.sql.rowset.serial.SerialBlob;
+import java.io.IOException;
+import java.sql.Blob;
+import java.sql.SQLException;
 
 @RestController
 @RequestMapping("/employee")
@@ -89,5 +95,28 @@ public class EmployeeController {
         } else {
             throw new ResourceNotFoundException("Data not found!");
         }
+    }
+
+    @PostMapping("/upload-photo/{employeeId}")
+    public ResponseEntity<Object> uploadPhoto(
+            @RequestParam("photo") MultipartFile file,
+            @PathVariable("employeeId") String employeeId,
+            @RequestHeader("user-audit-id") String userAuditId) throws IOException, SQLException, ResourceNotFoundException {
+        byte[] fileByte = file.getBytes();
+        Blob blob = new SerialBlob(fileByte);
+        Employee employee = employeeRepository.findById(employeeId).orElse(null);
+        if (employee == null) {
+            throw new ResourceNotFoundException("Employee not found!");
+        }
+        employee.setEmployeePhoto(blob);
+        employee.setUpdatedBy(userAuditId);
+        ResponseDto responseDto = ResponseDto.builder()
+                .code(HttpStatus.OK.toString())
+                .status("success")
+                .data(employeeRepository.save(employee))
+                .message("Successfully upload employee photo!")
+                .build();
+
+        return ResponseEntity.ok(responseDto);
     }
 }
