@@ -3,13 +3,11 @@ package com.absence.controllers;
 import com.absence.constants.AttendanceTypeConstant;
 import com.absence.dto.PresentRequestDto;
 import com.absence.dto.ResponseDto;
-import com.absence.dto.SickRequestDto;
 import com.absence.exceptions.InputValidationException;
 import com.absence.exceptions.ResourceNotFoundException;
 import com.absence.models.Attendance;
 import com.absence.models.Employee;
-import com.absence.models.Holiday;
-import com.absence.models.LeaveDetail;
+import com.absence.models.Sick;
 import com.absence.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,10 +22,9 @@ import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping("/absence")
+@RequestMapping("/attendance")
 public class AbsenceController {
 
     @Autowired
@@ -40,10 +37,10 @@ public class AbsenceController {
     AttendanceTypeRepository attendanceTypeRepository;
 
     @Autowired
-    LeaveDetailRepository leaveDetailRepository;
+    SickRepository sickRepository;
 
     @Autowired
-    HolidayRepository holidayRepository;
+    ProjectRepository projectRepository;
 
     @PostMapping("/present")
     public ResponseEntity<Object> present(@RequestHeader("user-audit-id") String userAuditId,
@@ -67,6 +64,8 @@ public class AbsenceController {
         newAttendance.setCheckInTime(dto.getCheckInTime());
         newAttendance.setCheckOutTime(dto.getCheckOutTime());
         newAttendance.setTask(dto.getTask());
+        newAttendance.setEmployee(employee);
+        newAttendance.setProject(projectRepository.findById(dto.getProjectId()).orElse(null));
         newAttendance.setAttendanceType(attendanceTypeRepository.findByAttendanceTypeName(AttendanceTypeConstant.PRESENT));
         newAttendance.setCreatedBy(userAuditId);
 
@@ -75,87 +74,6 @@ public class AbsenceController {
                 .status("success")
                 .data(attendanceRepository.save(newAttendance))
                 .message("Successfully save present data!")
-                .build();
-
-        return ResponseEntity.ok(responseDto);
-    }
-
-    @PostMapping("/sick")
-    public ResponseEntity<Object> sick(@RequestHeader("user-audit-id") String userAuditId, @RequestBody SickRequestDto dto) throws ResourceNotFoundException {
-        Employee employee = employeeRepository.findById(dto.getEmployeeId()).orElse(null);
-        if (employee == null) {
-            throw new ResourceNotFoundException("Employee not found!");
-        }
-
-        LeaveDetail leaveDetail = new LeaveDetail();
-        leaveDetail.setDescription(dto.getDescription());
-        leaveDetail.setStartDate(dto.getStartDate());
-        leaveDetail.setEndDate(dto.getEndDate());
-        leaveDetail.setEmployee(employee);
-        leaveDetail.setSubPartnerId(dto.getSubPartnerId());
-        leaveDetail.setCreatedBy(userAuditId);
-        long diffInMillis = Math.abs(dto.getEndDate().getTime() - dto.getStartDate().getTime());
-        long diff = TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
-        leaveDetail.setTotalDaysOff((int) diff);
-        LeaveDetail result = leaveDetailRepository.save(leaveDetail);
-
-        Date actualDate = dto.getStartDate();
-        while (actualDate.compareTo(dto.getEndDate()) < 1) {
-            Calendar c = Calendar.getInstance();
-            c.setTime(actualDate);
-            int dayOfWeek =c.get(Calendar.DAY_OF_WEEK);
-            if (dayOfWeek == 1 || dayOfWeek == 7) {
-                continue;
-            }
-
-            Holiday holiday = holidayRepository.findByDate(actualDate).orElse(null);
-            if (holiday != null) {
-                continue;
-            }
-
-            Attendance leaveAttendance = attendanceRepository.findByAttendanceDateAndEmployeeId(actualDate, employee.getEmployeeId()).orElse(null);
-            if (leaveAttendance != null) {
-                continue;
-            }
-
-            Attendance attendance = new Attendance();
-            attendance.setAttendanceDate(actualDate);
-            attendance.setLeaveDetail(result);
-            attendance.setCreatedBy(userAuditId);
-            attendance.setAttendanceType(attendanceTypeRepository.findByAttendanceTypeName(AttendanceTypeConstant.SICK));
-            attendanceRepository.save(attendance);
-
-            c.add(Calendar.DATE, 1);
-            actualDate = c.getTime();
-        }
-
-        ResponseDto responseDto = ResponseDto.builder()
-                .code(HttpStatus.OK.toString())
-                .status("success")
-                .data(result)
-                .message("Successfully save leave data!")
-                .build();
-
-        return ResponseEntity.ok(responseDto);
-    }
-
-    @PostMapping("/upload-document/{leaveDetailId}")
-    public ResponseEntity<Object> uploadDocument(@RequestHeader("user-audit-id") String userAuditId,
-                @RequestParam("photo") MultipartFile file,
-                @PathVariable("leaveDetailId") String leaveDetailId) throws IOException, SQLException, ResourceNotFoundException {
-        byte[] fileByte = file.getBytes();
-        Blob blob = new SerialBlob(fileByte);
-        LeaveDetail leaveDetail = leaveDetailRepository.findById(leaveDetailId).orElse(null);
-        if (leaveDetail == null) {
-            throw new ResourceNotFoundException("Leave or submission not found!!");
-        }
-        leaveDetail.setDocument(blob);
-        leaveDetail.setUpdatedBy(userAuditId);
-        ResponseDto responseDto = ResponseDto.builder()
-                .code(HttpStatus.OK.toString())
-                .status("success")
-                .data(leaveDetailRepository.save(leaveDetail))
-                .message("Successfully upload document!")
                 .build();
 
         return ResponseEntity.ok(responseDto);
@@ -178,6 +96,22 @@ public class AbsenceController {
                 .status("success")
                 .data(attendanceRepository.save(attendance))
                 .message("Successfully update absence data!")
+                .build();
+
+        return ResponseEntity.ok(responseDto);
+    }
+
+    @GetMapping("/present-history")
+    public ResponseEntity<Object> presentHistory(@RequestParam("employeeId") String employeeId,
+                                            @RequestParam("month") int month,
+                                            @RequestParam("year") int year) {
+        Date startDate = getStartDate(month, year);
+        Date endDate = getEndDate(month, year);
+        ResponseDto responseDto = ResponseDto.builder()
+                .code(HttpStatus.OK.toString())
+                .status("success")
+                .data(attendanceRepository.findPresentHistories(startDate, endDate, employeeId))
+                .message("Successfully fetch data!")
                 .build();
 
         return ResponseEntity.ok(responseDto);

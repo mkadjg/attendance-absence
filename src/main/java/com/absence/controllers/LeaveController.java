@@ -3,6 +3,7 @@ package com.absence.controllers;
 import com.absence.constants.AttendanceTypeConstant;
 import com.absence.constants.SubmissionStatusConstants;
 import com.absence.dto.LeaveRequestDto;
+import com.absence.dto.LeaveResponseDto;
 import com.absence.dto.RejectRequestDto;
 import com.absence.dto.ResponseDto;
 import com.absence.exceptions.ResourceNotFoundException;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/leave")
@@ -33,7 +35,7 @@ public class LeaveController {
     HolidayRepository holidayRepository;
 
     @Autowired
-    LeaveDetailRepository leaveDetailRepository;
+    SickRepository sickRepository;
 
     @Autowired
     AttendanceRepository attendanceRepository;
@@ -44,12 +46,18 @@ public class LeaveController {
     @GetMapping("/find-all-employee")
     public ResponseEntity<Object> findAllEmployee(@RequestParam("employeeId") String employeeId,
                                             @RequestParam("submissionStatusId") String submissionStatusId,
+                                            @RequestParam("month") int month,
                                             @RequestParam("year") int year) {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(submissionStatusId == null ? leaveSubmissionRepository.findByEmployeeAndYear(employeeId, year) :
-                        leaveSubmissionRepository.findByEmployeeAndYearAndSubmissionStatus(employeeId, year, submissionStatusId))
+                .data(Objects.equals(submissionStatusId, "all") ?
+                        leaveSubmissionRepository.findByEmployeeAndYear(employeeId, year)
+                                .stream()
+                                .map(this::toLeaveResponseDto):
+                        leaveSubmissionRepository.findByEmployeeAndYearAndSubmissionStatus(employeeId, year, submissionStatusId)
+                                .stream()
+                                .map(this::toLeaveResponseDto))
                 .message("Successfully fetch data!")
                 .build();
 
@@ -63,8 +71,13 @@ public class LeaveController {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(submissionStatusId == null ? leaveSubmissionRepository.findByDivisionAndYear(divisionId, year) :
-                        leaveSubmissionRepository.findByEmployeeAndYearAndSubmissionStatus(divisionId, year, submissionStatusId))
+                .data(Objects.equals(submissionStatusId, "all") ?
+                        leaveSubmissionRepository.findByDivisionAndYear(divisionId, year)
+                            .stream()
+                            .map(this::toLeaveResponseDto) :
+                        leaveSubmissionRepository.findByEmployeeAndYearAndSubmissionStatus(divisionId, year, submissionStatusId)
+                            .stream()
+                            .map(this::toLeaveResponseDto))
                 .message("Successfully fetch data!")
                 .build();
 
@@ -77,8 +90,13 @@ public class LeaveController {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(submissionStatusId == null ? leaveSubmissionRepository.findByYear(year) :
-                        leaveSubmissionRepository.findByYearAndSubmissionStatus(year, submissionStatusId))
+                .data(Objects.equals(submissionStatusId, "all") ?
+                        leaveSubmissionRepository.findByYear(year)
+                                .stream()
+                                .map(this::toLeaveResponseDto) :
+                        leaveSubmissionRepository.findByYearAndSubmissionStatus(year, submissionStatusId)
+                                .stream()
+                                .map(this::toLeaveResponseDto))
                 .message("Successfully fetch data!")
                 .build();
 
@@ -99,7 +117,7 @@ public class LeaveController {
         leaveSubmission.setEmployee(employee);
         leaveSubmission.setSubPartnerId(dto.getSubPartnerId());
         leaveSubmission.setCreatedBy(userAuditId);
-        leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.WAITING_APPROVAL));
+        leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.WAITING_APPROVAL_SPV));
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
@@ -120,7 +138,7 @@ public class LeaveController {
 
         leaveSubmission.setUpdatedBy(userAuditId);
         leaveSubmission.setSupervisorId(userAuditId);
-        leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.APPROVE_BY_SPV));
+        leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.WAITING_APPROVAL_HRD));
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
@@ -165,14 +183,14 @@ public class LeaveController {
         leaveSubmission.setHrdId(userAuditId);
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.APPROVED));
 
-        LeaveDetail leaveDetail = new LeaveDetail();
-        leaveDetail.setDescription(leaveSubmission.getDescription());
-        leaveDetail.setStartDate(leaveSubmission.getStartDate());
-        leaveDetail.setEndDate(leaveSubmission.getEndDate());
-        leaveDetail.setEmployee(leaveSubmission.getEmployee());
-        leaveDetail.setSubPartnerId(leaveSubmission.getSubPartnerId());
-        leaveDetail.setCreatedBy(userAuditId);
-        LeaveDetail result = leaveDetailRepository.save(leaveDetail);
+        Sick sick = new Sick();
+        sick.setDescription(leaveSubmission.getDescription());
+        sick.setStartDate(leaveSubmission.getStartDate());
+        sick.setEndDate(leaveSubmission.getEndDate());
+        sick.setEmployee(leaveSubmission.getEmployee());
+        sick.setSubPartnerId(leaveSubmission.getSubPartnerId());
+        sick.setCreatedBy(userAuditId);
+        Sick result = sickRepository.save(sick);
 
         int totalDaysOff = 0;
         Date actualDate = leaveSubmission.getStartDate();
@@ -192,7 +210,7 @@ public class LeaveController {
             totalDaysOff++;
             Attendance attendance = new Attendance();
             attendance.setAttendanceDate(actualDate);
-            attendance.setLeaveDetail(result);
+            attendance.setSick(result);
             attendance.setCreatedBy(userAuditId);
             attendance.setAttendanceType(attendanceTypeRepository.findByAttendanceTypeName(AttendanceTypeConstant.SICK));
             attendanceRepository.save(attendance);
@@ -202,7 +220,7 @@ public class LeaveController {
         }
 
         leaveSubmission.setTotalDaysOff(totalDaysOff);
-        leaveDetailRepository.save(leaveDetail);
+        sickRepository.save(sick);
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
@@ -255,6 +273,20 @@ public class LeaveController {
                 .build();
 
         return ResponseEntity.ok(responseDto);
+    }
+
+    public LeaveResponseDto toLeaveResponseDto(LeaveSubmission leaveSubmission) {
+        LeaveResponseDto leaveResponseDto = new LeaveResponseDto();
+        leaveResponseDto.setLeaveSubmissionId(leaveSubmission.getLeaveSubmissionId());
+        leaveResponseDto.setReason(leaveSubmission.getReason());
+        leaveResponseDto.setDescription(leaveSubmission.getDescription());
+        leaveResponseDto.setStartDate(leaveSubmission.getStartDate());
+        leaveResponseDto.setEndDate(leaveSubmission.getEndDate());
+        leaveResponseDto.setSubPartnerId(leaveResponseDto.getSubPartnerId());
+        leaveResponseDto.setSubPartnerName(Objects.requireNonNull(employeeRepository.findById(leaveSubmission.getSubPartnerId()).orElse(null)).getEmployeeName());
+        leaveResponseDto.setSubmissionStatusId(leaveSubmission.getSubmissionStatus().getSubmissionStatusId());
+        leaveResponseDto.setSubmissionStatusName(leaveSubmission.getSubmissionStatus().getSubmissionStatusName());
+        return leaveResponseDto;
     }
 
 }

@@ -72,7 +72,7 @@ public class HolidayController {
         }
     }
 
-    @PutMapping("/delete/{holidayId}")
+    @DeleteMapping("/delete/{holidayId}")
     public ResponseEntity<Object> delete(@PathVariable("holidayId") String holidayId) throws ResourceNotFoundException {
         Holiday holiday = holidayRepository.findById(holidayId).orElse(null);
         if (holiday != null) {

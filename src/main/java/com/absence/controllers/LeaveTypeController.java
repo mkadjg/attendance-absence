@@ -72,7 +72,7 @@ public class LeaveTypeController {
         }
     }
 
-    @PutMapping("/delete/{leaveTypeId}")
+    @DeleteMapping("/delete/{leaveTypeId}")
     public ResponseEntity<Object> delete(@PathVariable("leaveTypeId") String leaveTypeId) throws ResourceNotFoundException {
         LeaveType leaveType = leaveTypeRepository.findById(leaveTypeId).orElse(null);
         if (leaveType != null) {

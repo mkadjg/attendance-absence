@@ -15,4 +15,6 @@ public class PresentRequestDto {
     private Date checkInTime;
     private Date checkOutTime;
     private String employeeId;
+    private String projectId;
+    private String location;
 }

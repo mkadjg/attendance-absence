@@ -1,18 +1,22 @@
 package com.absence.controllers;
 
-import com.absence.dto.DivisionRequestDto;
+import com.absence.dto.ProjectRequestDto;
 import com.absence.dto.ResponseDto;
 import com.absence.exceptions.ResourceNotFoundException;
-import com.absence.models.Division;
+import com.absence.models.Project;
 import com.absence.repositories.DivisionRepository;
+import com.absence.repositories.ProjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/division")
-public class DivisionController {
+@RequestMapping("/project")
+public class ProjectController {
+
+    @Autowired
+    ProjectRepository projectRepository;
 
     @Autowired
     DivisionRepository divisionRepository;
@@ -22,7 +26,7 @@ public class DivisionController {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(divisionRepository.findAll())
+                .data(projectRepository.findAll())
                 .message("Successfully fetch data!")
                 .build();
 
@@ -30,37 +34,39 @@ public class DivisionController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Object> create(@RequestBody DivisionRequestDto dto,
+    public ResponseEntity<Object> create(@RequestBody ProjectRequestDto dto,
                                          @RequestHeader("user-audit-id") String userAuditId) {
-        Division division = new Division();
-        division.setDivisionName(dto.getDivisionName());
-        division.setDivisionDesc(dto.getDivisionDesc());
-        division.setCreatedBy(userAuditId);
+        Project project = new Project();
+        project.setProjectName(dto.getProjectName());
+        project.setProjectDesc(dto.getProjectDesc());
+        project.setDivision(divisionRepository.findById(dto.getDivisionId()).orElse(null));
+        project.setCreatedBy(userAuditId);
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(divisionRepository.save(division))
+                .data(projectRepository.save(project))
                 .message("Successfully create data!")
                 .build();
 
         return ResponseEntity.ok(responseDto);
     }
 
-    @PutMapping("/update/{divisionId}")
-    public ResponseEntity<Object> update(@PathVariable("divisionId") String divisionId,
-                                         @RequestBody DivisionRequestDto dto,
+    @PutMapping("/update/{projectId}")
+    public ResponseEntity<Object> update(@PathVariable("projectId") String projectId,
+                                         @RequestBody ProjectRequestDto dto,
                                          @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
-        Division division = divisionRepository.findById(divisionId).orElse(null);
-        if (division != null) {
-            division.setDivisionName(dto.getDivisionName());
-            division.setDivisionDesc(dto.getDivisionDesc());
-            division.setUpdatedBy(userAuditId);
+        Project project = projectRepository.findById(projectId).orElse(null);
+        if (project != null) {
+            project.setProjectName(dto.getProjectName());
+            project.setProjectDesc(dto.getProjectDesc());
+            project.setDivision(divisionRepository.findById(dto.getDivisionId()).orElse(null));
+            project.setUpdatedBy(userAuditId);
 
             ResponseDto responseDto = ResponseDto.builder()
                     .code(HttpStatus.OK.toString())
                     .status("success")
-                    .data(divisionRepository.save(division))
+                    .data(projectRepository.save(project))
                     .message("Successfully update data!")
                     .build();
 
@@ -70,11 +76,11 @@ public class DivisionController {
         }
     }
 
-    @DeleteMapping("/delete/{divisionId}")
-    public ResponseEntity<Object> delete(@PathVariable("divisionId") String divisionId) throws ResourceNotFoundException {
-        Division division = divisionRepository.findById(divisionId).orElse(null);
-        if (division != null) {
-            divisionRepository.delete(division);
+    @DeleteMapping("/delete/{projectId}")
+    public ResponseEntity<Object> delete(@PathVariable("projectId") String projectId) throws ResourceNotFoundException {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        if (project != null) {
+            projectRepository.delete(project);
             ResponseDto responseDto = ResponseDto.builder()
                     .code(HttpStatus.OK.toString())
                     .status("success")
@@ -86,6 +92,18 @@ public class DivisionController {
         } else {
             throw new ResourceNotFoundException("Data not found!");
         }
+    }
+
+    @GetMapping("/find-by-division/{divisionId}")
+    public ResponseEntity<Object> findByDivision(@PathVariable String divisionId) {
+        ResponseDto responseDto = ResponseDto.builder()
+                .code(HttpStatus.OK.toString())
+                .status("success")
+                .data(projectRepository.findByDivisionId(divisionId))
+                .message("Successfully fetch data!")
+                .build();
+
+        return ResponseEntity.ok(responseDto);
     }
 
 }

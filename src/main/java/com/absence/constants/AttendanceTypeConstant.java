@@ -1,7 +1,7 @@
 package com.absence.constants;
 
 public class AttendanceTypeConstant {
-    public static final String PRESENT = "Hadir";
-    public static final String SICK = "Sakit";
-    public static final String LEAVE = "Cuti";
+    public static final String PRESENT = "Present";
+    public static final String SICK = "Sick";
+    public static final String LEAVE = "Leave";
 }

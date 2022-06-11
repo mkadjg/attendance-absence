@@ -12,5 +12,4 @@ import java.util.Date;
 public class DivisionRequestDto {
     private String divisionName;
     private String divisionDesc;
-    private Date divisionDate;
 }

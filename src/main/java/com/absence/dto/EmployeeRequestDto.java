@@ -19,5 +19,5 @@ public class EmployeeRequestDto {
     private String employeePhoneNumber;
     private int employeeGender;
     private String divisionId;
-    private boolean isSupervisor;
+    private int isSupervisor;
 }

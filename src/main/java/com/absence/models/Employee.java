@@ -9,7 +9,6 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.sql.Blob;
 import java.util.Date;
 
 @EqualsAndHashCode(callSuper = true)
@@ -49,13 +48,14 @@ public class Employee extends BaseModel implements Serializable {
     private String employeePhoneNumber;
 
     @Column(name = "employee_gender")
-    private int employeeGender;
+    private Integer employeeGender;
 
     @Column(name = "is_supervisor")
-    private boolean isSupervisor;
+    private Integer isSupervisor;
 
-    @Column(name = "employee_photo")
-    private Blob employeePhoto;
+    @Lob
+    @Column(name = "employee_photo", columnDefinition = "BLOB")
+    private byte[] employeePhoto;
 
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "user_id")

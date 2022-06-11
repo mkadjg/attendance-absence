@@ -16,6 +16,19 @@ public interface AttendanceRepository extends JpaRepository<Attendance, String> 
     @Query("select at from Attendance at where " +
             "at.attendanceDate between :startDate and :endDate " +
             "and at.employee.employeeId =:employeeId " +
+            "and at.attendanceType.attendanceTypeName='Present' " +
+            "order by at.attendanceDate")
+    List<Attendance> findPresentHistories(Date startDate, Date endDate, String employeeId);
+
+    @Query("select at from Attendance at where " +
+            "at.attendanceDate between :startDate and :endDate " +
+            "and at.employee.employeeId =:employeeId " +
+            "order by at.attendanceDate")
+    List<Attendance> findLeaveHistories(Date startDate, Date endDate, String employeeId);
+
+    @Query("select at from Attendance at where " +
+            "at.attendanceDate between :startDate and :endDate " +
+            "and at.employee.employeeId =:employeeId " +
             "order by at.attendanceDate")
     List<Attendance> findHistoriesAttendance(Date startDate, Date endDate, String employeeId);
 

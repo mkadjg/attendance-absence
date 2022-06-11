@@ -33,6 +33,9 @@ public class Attendance extends BaseModel implements Serializable {
     @Column(name = "task")
     private String task;
 
+    @Column(name = "location")
+    private String location;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "check_in_time")
     private Date checkInTime;
@@ -41,16 +44,20 @@ public class Attendance extends BaseModel implements Serializable {
     @Column(name = "check_out_time")
     private Date checkOutTime;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", referencedColumnName = "employee_id")
     private Employee employee;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "attendance_type_id", referencedColumnName = "attendance_type_id")
     private AttendanceType attendanceType;
 
-    @ManyToOne
-    @JoinColumn(name = "leave_detail_id", referencedColumnName = "leave_detail_id")
-    private LeaveDetail leaveDetail;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sick_id", referencedColumnName = "sick_id")
+    private Sick sick;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", referencedColumnName = "project_id")
+    private Project project;
 
 }

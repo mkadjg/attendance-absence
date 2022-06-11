@@ -36,7 +36,7 @@ public class UserOtp extends BaseModel implements Serializable {
     @Column(name = "valid_until")
     private Date validUntil;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "user_id", nullable = false)
     private Users users;
 

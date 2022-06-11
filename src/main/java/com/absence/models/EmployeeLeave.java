@@ -29,11 +29,11 @@ public class EmployeeLeave extends BaseModel implements Serializable {
     @Column(name = "used")
     private Integer used;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", referencedColumnName = "employee_id")
     private Employee employee;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "leave_type_id", referencedColumnName = "leave_type_id")
     private LeaveType leaveType;
 

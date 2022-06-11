@@ -58,7 +58,7 @@ public class EmployeeController {
             employee.setEmployeeEmail(dto.getEmployeeEmail());
             employee.setEmployeePhoneNumber(dto.getEmployeePhoneNumber());
             employee.setEmployeeGender(dto.getEmployeeGender());
-            employee.setSupervisor(dto.isSupervisor());
+            employee.setIsSupervisor(dto.getIsSupervisor());
             employee.setDivision(divisionRepository.findById(dto.getDivisionId()).orElse(null));
             employee.setUpdatedBy(userAuditId);
 
@@ -101,20 +101,31 @@ public class EmployeeController {
     public ResponseEntity<Object> uploadPhoto(
             @RequestParam("photo") MultipartFile file,
             @PathVariable("employeeId") String employeeId,
-            @RequestHeader("user-audit-id") String userAuditId) throws IOException, SQLException, ResourceNotFoundException {
+            @RequestHeader("user-audit-id") String userAuditId) throws IOException, ResourceNotFoundException {
         byte[] fileByte = file.getBytes();
-        Blob blob = new SerialBlob(fileByte);
         Employee employee = employeeRepository.findById(employeeId).orElse(null);
         if (employee == null) {
             throw new ResourceNotFoundException("Employee not found!");
         }
-        employee.setEmployeePhoto(blob);
+        employee.setEmployeePhoto(fileByte);
         employee.setUpdatedBy(userAuditId);
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
                 .data(employeeRepository.save(employee))
                 .message("Successfully upload employee photo!")
+                .build();
+
+        return ResponseEntity.ok(responseDto);
+    }
+
+    @GetMapping("/partner")
+    public ResponseEntity<Object> partner(@RequestParam String employeeId, @RequestParam String divisionId) {
+        ResponseDto responseDto = ResponseDto.builder()
+                .code(HttpStatus.OK.toString())
+                .status("success")
+                .data(employeeRepository.findAllPartner(employeeId, divisionId))
+                .message("Successfully fetch data!")
                 .build();
 
         return ResponseEntity.ok(responseDto);

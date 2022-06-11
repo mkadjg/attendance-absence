@@ -9,11 +9,12 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LeaveRequestDto {
-    private String description;
+public class SickResponseDto {
+    private String sickId;
     private Date startDate;
     private Date endDate;
-    private String employeeId;
-    private int totalDaysOff;
+    private String description;
     private String subPartnerId;
+    private String subPartnerName;
+    private byte[] document;
 }

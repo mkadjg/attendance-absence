@@ -35,7 +35,7 @@ public class Users extends BaseModel implements Serializable {
     private String password;
 
     @Column(name = "status")
-    private boolean status;
+    private Boolean status;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "locked_until")

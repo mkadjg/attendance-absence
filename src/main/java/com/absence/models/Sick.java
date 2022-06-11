@@ -16,15 +16,15 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "leave_detail")
+@Table(name = "sick")
 @Entity
-public class LeaveDetail extends BaseModel implements Serializable {
+public class Sick extends BaseModel implements Serializable {
 
     @Id
     @GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-    @Column(name = "leave_detail_id", nullable = false, unique = true)
-    private String leaveDetailId;
+    @Column(name = "sick_id", nullable = false, unique = true)
+    private String sickId;
 
     @Type(type = "text")
     @Column(name = "description")
@@ -39,25 +39,15 @@ public class LeaveDetail extends BaseModel implements Serializable {
     private Date endDate;
 
     @Column(name = "total_days_off")
-    private int totalDaysOff;
+    private Integer totalDaysOff;
 
     @Column(name = "document")
-    private Blob document;
+    private byte[] document;
 
     @Column(name = "sub_partner_id")
     private String subPartnerId;
 
-    @Column(name = "supervisor_id")
-    private String supervisorId;
-
-    @Column(name = "hrd_id")
-    private String hrdId;
-
-    @Type(type = "text")
-    @Column(name = "reason")
-    private String reason;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employeeId", referencedColumnName = "employee_id")
     private Employee employee;
 

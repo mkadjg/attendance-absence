@@ -30,6 +30,6 @@ public class LeaveType extends BaseModel implements Serializable {
     private String leaveTypeDesc;
 
     @Column(name = "default_value")
-    private int defaultValue;
+    private Integer defaultValue;
 
 }

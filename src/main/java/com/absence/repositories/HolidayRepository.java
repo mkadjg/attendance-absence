@@ -9,6 +9,6 @@ import java.util.Optional;
 
 public interface HolidayRepository extends JpaRepository<Holiday, String> {
 
-    @Query("select h from Holiday where h.holidayDate =:date")
+    @Query("select h from Holiday h where h.holidayDate =:date")
     Optional<Holiday> findByDate(Date date);
 }

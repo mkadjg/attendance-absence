@@ -19,12 +19,12 @@ public interface LeaveSubmissionRepository extends JpaRepository<LeaveSubmission
             "order by ls.startDate desc")
     List<LeaveSubmission> findByEmployeeAndYearAndSubmissionStatus(String employeeId, int year, String submissionStatusId);
 
-    @Query("select ls from LeaveSubmission ls where ls.division.divisionId =:divisionId " +
+    @Query("select ls from LeaveSubmission ls where ls.employee.division.divisionId =:divisionId " +
             "and year(ls.startDate) =:year " +
             "order by ls.startDate desc")
     List<LeaveSubmission> findByDivisionAndYear(String divisionId, int year);
 
-    @Query("select ls from LeaveSubmission ls where ls.division.divisionId =:divisionId " +
+    @Query("select ls from LeaveSubmission ls where ls.employee.division.divisionId =:divisionId " +
             "and year(ls.startDate) =:year " +
             "and ls.submissionStatus.submissionStatusId =:submissionStatusId " +
             "order by ls.startDate desc")

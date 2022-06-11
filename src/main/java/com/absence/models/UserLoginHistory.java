@@ -31,7 +31,7 @@ public class UserLoginHistory {
     private String userId;
 
     @Column(name = "status")
-    private boolean status;
+    private Boolean status;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "login_date")
