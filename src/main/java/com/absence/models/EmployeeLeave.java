@@ -20,8 +20,8 @@ public class EmployeeLeave extends BaseModel implements Serializable {
     @Id
     @GeneratedValue(generator = "uuid")
 	@GenericGenerator(name = "uuid", strategy = "uuid2")
-    @Column(name = "user_id", nullable = false, unique = true)
-    private String userId;
+    @Column(name = "employee_leave_id", nullable = false, unique = true)
+    private String employeeLeaveId;
 
     @Column(name = "available")
     private Integer available;

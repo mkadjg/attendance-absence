@@ -10,10 +10,12 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LeaveRequestDto {
-    private String description;
+    private String descriptionHtml;
+    private String descriptionText;
     private Date startDate;
     private Date endDate;
     private String employeeId;
     private int totalDaysOff;
     private String subPartnerId;
+    private String leaveTypeId;
 }

@@ -9,13 +9,18 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PresentRequestDto {
+public class TimesheetResponseDto {
+    private String attendanceId;
     private Date attendanceDate;
     private String taskHtml;
     private String taskText;
+    private String location;
     private Date checkInTime;
     private Date checkOutTime;
-    private String employeeId;
     private String projectId;
-    private String location;
+    private String projectName;
+    private String attendanceTypeId;
+    private String attendanceTypeName;
+    private String descriptionHtml;
+    private String descriptionName;
 }

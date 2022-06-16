@@ -26,8 +26,12 @@ public class LeaveSubmission extends BaseModel implements Serializable {
     private String leaveSubmissionId;
 
     @Type(type = "text")
-    @Column(name = "description")
-    private String description;
+    @Column(name = "description_html")
+    private String descriptionHtml;
+
+    @Type(type = "text")
+    @Column(name = "description_text")
+    private String descriptionText;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "start_date")
@@ -56,6 +60,10 @@ public class LeaveSubmission extends BaseModel implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "submission_status_id", referencedColumnName = "submission_status_id")
     private SubmissionStatus submissionStatus;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "leave_type_id", referencedColumnName = "leave_type_id")
+    private LeaveType leaveType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", referencedColumnName = "employee_id")

@@ -43,10 +43,15 @@ public class LeaveController {
     @Autowired
     AttendanceTypeRepository attendanceTypeRepository;
 
+    @Autowired
+    LeaveTypeRepository leaveTypeRepository;
+
+    @Autowired
+    EmployeeLeaveRepository employeeLeaveRepository;
+
     @GetMapping("/find-all-employee")
     public ResponseEntity<Object> findAllEmployee(@RequestParam("employeeId") String employeeId,
                                             @RequestParam("submissionStatusId") String submissionStatusId,
-                                            @RequestParam("month") int month,
                                             @RequestParam("year") int year) {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
@@ -65,41 +70,65 @@ public class LeaveController {
     }
 
     @GetMapping("/find-all-supervisor")
-    public ResponseEntity<Object> findAllSupervisor(@RequestParam("submissionStatusId") String submissionStatusId,
-                                            @RequestParam("divisionId") String divisionId,
+    public ResponseEntity<Object> findAllSupervisor(@RequestParam("divisionId") String divisionId,
                                             @RequestParam("year") int year) {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(Objects.equals(submissionStatusId, "all") ?
-                        leaveSubmissionRepository.findByDivisionAndYear(divisionId, year)
-                            .stream()
-                            .map(this::toLeaveResponseDto) :
-                        leaveSubmissionRepository.findByEmployeeAndYearAndSubmissionStatus(divisionId, year, submissionStatusId)
+                .data(leaveSubmissionRepository.findByDivisionAndYearForSupervisor(divisionId, year)
                             .stream()
                             .map(this::toLeaveResponseDto))
                 .message("Successfully fetch data!")
                 .build();
-
         return ResponseEntity.ok(responseDto);
     }
 
     @GetMapping("/find-all-hrd")
-    public ResponseEntity<Object> findAllHrd(@RequestParam("submissionStatusId") String submissionStatusId,
-                                            @RequestParam("year") int year) {
+    public ResponseEntity<Object> findAllHrd(@RequestParam("year") int year) {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(Objects.equals(submissionStatusId, "all") ?
-                        leaveSubmissionRepository.findByYear(year)
-                                .stream()
-                                .map(this::toLeaveResponseDto) :
-                        leaveSubmissionRepository.findByYearAndSubmissionStatus(year, submissionStatusId)
+                .data(leaveSubmissionRepository.findByYearForHrd(year)
                                 .stream()
                                 .map(this::toLeaveResponseDto))
                 .message("Successfully fetch data!")
                 .build();
+        return ResponseEntity.ok(responseDto);
+    }
 
+    @GetMapping("/validate-total-days")
+    public ResponseEntity<Object> validateTotalDays(@RequestParam("startDate") Date startDate,
+                                                    @RequestParam("endDate") Date endDate) {
+        int totalDaysOff = 0;
+        Date actualDate = startDate;
+        while (actualDate.compareTo(endDate) < 1) {
+            Calendar c = Calendar.getInstance();
+            c.setTime(actualDate);
+            int dayOfWeek =c.get(Calendar.DAY_OF_WEEK);
+            if (dayOfWeek == 1 || dayOfWeek == 7) {
+                c.add(Calendar.DATE, 1);
+                actualDate = c.getTime();
+                continue;
+            }
+
+            Holiday holiday = holidayRepository.findByDate(actualDate).orElse(null);
+            if (holiday != null) {
+                c.add(Calendar.DATE, 1);
+                actualDate = c.getTime();
+                continue;
+            }
+
+            totalDaysOff++;
+            c.add(Calendar.DATE, 1);
+            actualDate = c.getTime();
+        }
+
+        ResponseDto responseDto = ResponseDto.builder()
+                .code(HttpStatus.OK.toString())
+                .status("success")
+                .data(totalDaysOff)
+                .message("Successfully fetch data!")
+                .build();
         return ResponseEntity.ok(responseDto);
     }
 
@@ -110,13 +139,48 @@ public class LeaveController {
             throw new ResourceNotFoundException("Employee not found!");
         }
 
+        Date actualDate = dto.getStartDate();
+        boolean isTaken = false;
+        while (actualDate.compareTo(dto.getEndDate()) < 1) {
+            Calendar c = Calendar.getInstance();
+            c.setTime(actualDate);
+
+            Attendance leaveAttendance = attendanceRepository.findByAttendanceDateAndEmployeeId(actualDate, employee.getEmployeeId()).orElse(null);
+            if (leaveAttendance != null) {
+                isTaken = true;
+                break;
+            }
+
+            c.add(Calendar.DATE, 1);
+            actualDate = c.getTime();
+        }
+
+        if (isTaken) {
+            ResponseDto responseDto = ResponseDto.builder()
+                    .code(HttpStatus.BAD_REQUEST.toString())
+                    .status("warning")
+                    .data(null)
+                    .message("Date Already Taken!")
+                    .build();
+            return ResponseEntity.ok(responseDto);
+        }
+
+        EmployeeLeave employeeLeave = employeeLeaveRepository.findByLeaveTypeAndEmployeeId(dto.getLeaveTypeId(),
+                employee.getEmployeeId());
+
+        employeeLeave.setAvailable((employeeLeave.getAvailable() == null ? 0 : employeeLeave.getAvailable()) - dto.getTotalDaysOff());
+        employeeLeave.setUsed((employeeLeave.getUsed() == null ? 0 : employeeLeave.getUsed()) + dto.getTotalDaysOff());
+
         LeaveSubmission leaveSubmission = new LeaveSubmission();
-        leaveSubmission.setDescription(dto.getDescription());
+        leaveSubmission.setDescriptionText(dto.getDescriptionText());
+        leaveSubmission.setDescriptionHtml(dto.getDescriptionHtml());
         leaveSubmission.setStartDate(dto.getStartDate());
         leaveSubmission.setEndDate(dto.getEndDate());
         leaveSubmission.setEmployee(employee);
         leaveSubmission.setSubPartnerId(dto.getSubPartnerId());
+        leaveSubmission.setTotalDaysOff(dto.getTotalDaysOff());
         leaveSubmission.setCreatedBy(userAuditId);
+        leaveSubmission.setLeaveType(leaveTypeRepository.findById(dto.getLeaveTypeId()).orElse(null));
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.WAITING_APPROVAL_SPV));
 
         ResponseDto responseDto = ResponseDto.builder()
@@ -184,7 +248,8 @@ public class LeaveController {
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.APPROVED));
 
         Sick sick = new Sick();
-        sick.setDescription(leaveSubmission.getDescription());
+        sick.setDescriptionHtml(leaveSubmission.getDescriptionHtml());
+        sick.setDescriptionText(leaveSubmission.getDescriptionText());
         sick.setStartDate(leaveSubmission.getStartDate());
         sick.setEndDate(leaveSubmission.getEndDate());
         sick.setEmployee(leaveSubmission.getEmployee());
@@ -254,15 +319,15 @@ public class LeaveController {
         return ResponseEntity.ok(responseDto);
     }
 
-    @PostMapping("/cancel/{leaveSubmissionId}")
-    public ResponseEntity<Object> cancel(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
+    @GetMapping("/cancel/{leaveSubmissionId}")
+    public ResponseEntity<Object> cancel(@PathVariable("leaveSubmissionId") String leaveSubmissionId,
+                                         @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
         }
 
         leaveSubmission.setUpdatedBy(userAuditId);
-        leaveSubmission.setReason(dto.getReason());
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.CANCELLED));
 
         ResponseDto responseDto = ResponseDto.builder()
@@ -279,7 +344,8 @@ public class LeaveController {
         LeaveResponseDto leaveResponseDto = new LeaveResponseDto();
         leaveResponseDto.setLeaveSubmissionId(leaveSubmission.getLeaveSubmissionId());
         leaveResponseDto.setReason(leaveSubmission.getReason());
-        leaveResponseDto.setDescription(leaveSubmission.getDescription());
+        leaveResponseDto.setDescriptionHtml(leaveSubmission.getDescriptionHtml());
+        leaveResponseDto.setDescriptionText(leaveSubmission.getDescriptionText());
         leaveResponseDto.setStartDate(leaveSubmission.getStartDate());
         leaveResponseDto.setEndDate(leaveSubmission.getEndDate());
         leaveResponseDto.setSubPartnerId(leaveResponseDto.getSubPartnerId());

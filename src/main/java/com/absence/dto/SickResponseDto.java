@@ -13,7 +13,8 @@ public class SickResponseDto {
     private String sickId;
     private Date startDate;
     private Date endDate;
-    private String description;
+    private String descriptionText;
+    private String descriptionHtml;
     private String subPartnerId;
     private String subPartnerName;
     private byte[] document;

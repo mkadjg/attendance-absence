@@ -19,24 +19,15 @@ public interface LeaveSubmissionRepository extends JpaRepository<LeaveSubmission
             "order by ls.startDate desc")
     List<LeaveSubmission> findByEmployeeAndYearAndSubmissionStatus(String employeeId, int year, String submissionStatusId);
 
-    @Query("select ls from LeaveSubmission ls where ls.employee.division.divisionId =:divisionId " +
+    @Query("select ls from LeaveSubmission ls where ls.employee.jobTitle.division.divisionId =:divisionId " +
             "and year(ls.startDate) =:year " +
+            "and ls.submissionStatus.submissionStatusName = 'Waiting Approval Supervisor' " +
             "order by ls.startDate desc")
-    List<LeaveSubmission> findByDivisionAndYear(String divisionId, int year);
-
-    @Query("select ls from LeaveSubmission ls where ls.employee.division.divisionId =:divisionId " +
-            "and year(ls.startDate) =:year " +
-            "and ls.submissionStatus.submissionStatusId =:submissionStatusId " +
-            "order by ls.startDate desc")
-    List<LeaveSubmission> findByDivisionAndYearAndSubmissionStatus(String divisionId, int year, String submissionStatusId);
+    List<LeaveSubmission> findByDivisionAndYearForSupervisor(String divisionId, int year);
 
     @Query("select ls from LeaveSubmission ls where year(ls.startDate) =:year " +
+            "and ls.submissionStatus.submissionStatusName = 'Waiting Approval HRD' " +
             "order by ls.startDate desc")
-    List<LeaveSubmission> findByYear(int year);
-
-    @Query("select ls from LeaveSubmission ls where year(ls.startDate) =:year " +
-            "and ls.submissionStatus.submissionStatusId =:submissionStatusId " +
-            "order by ls.startDate desc")
-    List<LeaveSubmission> findByYearAndSubmissionStatus(int year, String submissionStatusId);
+    List<LeaveSubmission> findByYearForHrd(int year);
 
 }

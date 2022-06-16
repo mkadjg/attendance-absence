@@ -10,7 +10,8 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SickRequestDto {
-    private String description;
+    private String descriptionHtml;
+    private String descriptionText;
     private Date startDate;
     private Date endDate;
     private String employeeId;

@@ -30,8 +30,12 @@ public class Attendance extends BaseModel implements Serializable {
     private Date attendanceDate;
 
     @Type(type = "text")
-    @Column(name = "task")
-    private String task;
+    @Column(name = "task_html")
+    private String taskHtml;
+
+    @Type(type = "text")
+    @Column(name = "task_text")
+    private String taskText;
 
     @Column(name = "location")
     private String location;
@@ -55,6 +59,10 @@ public class Attendance extends BaseModel implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sick_id", referencedColumnName = "sick_id")
     private Sick sick;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "leave_submission_id", referencedColumnName = "leave_submission_id")
+    private LeaveSubmission leaveSubmission;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", referencedColumnName = "project_id")

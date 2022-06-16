@@ -50,7 +50,8 @@ public class SickController {
         }
 
         Sick sick = new Sick();
-        sick.setDescription(dto.getDescription());
+        sick.setDescriptionText(dto.getDescriptionText());
+        sick.setDescriptionHtml(dto.getDescriptionHtml());
         sick.setStartDate(dto.getStartDate());
         sick.setEndDate(dto.getEndDate());
         sick.setEmployee(employee);
@@ -89,6 +90,7 @@ public class SickController {
             Attendance attendance = new Attendance();
             attendance.setAttendanceDate(actualDate);
             attendance.setSick(result);
+            attendance.setEmployee(employee);
             attendance.setCreatedBy(userAuditId);
             attendance.setAttendanceType(attendanceTypeRepository.findByAttendanceTypeName(AttendanceTypeConstant.SICK));
             attendanceRepository.save(attendance);
@@ -151,7 +153,8 @@ public class SickController {
         sickResponseDto.setSickId(sick.getSickId());
         sickResponseDto.setStartDate(sick.getStartDate());
         sickResponseDto.setEndDate(sick.getEndDate());
-        sickResponseDto.setDescription(sick.getDescription());
+        sickResponseDto.setDescriptionHtml(sick.getDescriptionHtml());
+        sickResponseDto.setDescriptionText(sick.getDescriptionText());
         sickResponseDto.setSubPartnerId(sick.getSubPartnerId());
         sickResponseDto.setSubPartnerName(Objects.requireNonNull(employeeRepository.findById(sick.getSubPartnerId()).orElse(null)).getEmployeeName());
         sickResponseDto.setDocument(sick.getDocument());

@@ -27,8 +27,12 @@ public class Sick extends BaseModel implements Serializable {
     private String sickId;
 
     @Type(type = "text")
-    @Column(name = "description")
-    private String description;
+    @Column(name = "description_html")
+    private String descriptionHtml;
+
+    @Type(type = "text")
+    @Column(name = "description_text")
+    private String descriptionText;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "start_date")

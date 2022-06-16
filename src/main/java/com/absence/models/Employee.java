@@ -53,15 +53,14 @@ public class Employee extends BaseModel implements Serializable {
     @Column(name = "is_supervisor")
     private Integer isSupervisor;
 
+    @Column(name = "userId")
+    private String userId;
+
     @Lob
     @Column(name = "employee_photo", columnDefinition = "BLOB")
     private byte[] employeePhoto;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "user_id")
-    private Users users;
-
-    @ManyToOne
-    @JoinColumn(name = "division_id", referencedColumnName = "division_id")
-    private Division division;
+    @JoinColumn(name = "job_title_id", referencedColumnName = "job_title_id")
+    private JobTitle jobTitle;
 }
