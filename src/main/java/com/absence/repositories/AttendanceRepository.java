@@ -38,4 +38,9 @@ public interface AttendanceRepository extends JpaRepository<Attendance, String> 
             "and at.attendanceType.attendanceTypeId = :attendanceTypeId " +
             "order by at.attendanceDate")
     List<Attendance> findHistoriesAttendance(Date startDate, Date endDate, String attendanceTypeId, String employeeId);
+
+    @Query("select at from Attendance at where " +
+            "at.attendanceDate =:today " +
+            "and at.attendanceType.attendanceTypeName <> 'Present'")
+    List<Attendance> findOffByDate(Date today);
 }

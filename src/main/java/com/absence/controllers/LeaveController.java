@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -70,12 +71,13 @@ public class LeaveController {
     }
 
     @GetMapping("/find-all-supervisor")
-    public ResponseEntity<Object> findAllSupervisor(@RequestParam("divisionId") String divisionId,
+    public ResponseEntity<Object> findAllSupervisor(@RequestParam("employeeId") String employeeId,
+                                            @RequestParam("divisionId") String divisionId,
                                             @RequestParam("year") int year) {
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
-                .data(leaveSubmissionRepository.findByDivisionAndYearForSupervisor(divisionId, year)
+                .data(leaveSubmissionRepository.findByDivisionAndYearForSupervisor(employeeId, divisionId, year)
                             .stream()
                             .map(this::toLeaveResponseDto))
                 .message("Successfully fetch data!")
@@ -139,14 +141,25 @@ public class LeaveController {
             throw new ResourceNotFoundException("Employee not found!");
         }
 
+        EmployeeLeave employeeLeave = employeeLeaveRepository.findByLeaveTypeAndEmployeeId(dto.getLeaveTypeId(), dto.getEmployeeId());
+        if (dto.getTotalDaysOff() > employeeLeave.getAvailable()) {
+            ResponseDto responseDto = ResponseDto.builder()
+                    .code(HttpStatus.BAD_REQUEST.toString())
+                    .status("warning")
+                    .data(null)
+                    .message("The rest days of the leave is not enough!")
+                    .build();
+            return ResponseEntity.badRequest().body(responseDto);
+        }
+
         Date actualDate = dto.getStartDate();
         boolean isTaken = false;
         while (actualDate.compareTo(dto.getEndDate()) < 1) {
             Calendar c = Calendar.getInstance();
             c.setTime(actualDate);
 
-            Attendance leaveAttendance = attendanceRepository.findByAttendanceDateAndEmployeeId(actualDate, employee.getEmployeeId()).orElse(null);
-            if (leaveAttendance != null) {
+            List<LeaveSubmission> leaveSubmission = leaveSubmissionRepository.findByDateAndEmployeeId(actualDate, employee.getEmployeeId());
+            if (leaveSubmission != null) {
                 isTaken = true;
                 break;
             }
@@ -162,11 +175,8 @@ public class LeaveController {
                     .data(null)
                     .message("Date Already Taken!")
                     .build();
-            return ResponseEntity.ok(responseDto);
+            return ResponseEntity.badRequest().body(responseDto);
         }
-
-        EmployeeLeave employeeLeave = employeeLeaveRepository.findByLeaveTypeAndEmployeeId(dto.getLeaveTypeId(),
-                employee.getEmployeeId());
 
         employeeLeave.setAvailable((employeeLeave.getAvailable() == null ? 0 : employeeLeave.getAvailable()) - dto.getTotalDaysOff());
         employeeLeave.setUsed((employeeLeave.getUsed() == null ? 0 : employeeLeave.getUsed()) + dto.getTotalDaysOff());
@@ -193,8 +203,9 @@ public class LeaveController {
         return ResponseEntity.ok(responseDto);
     }
 
-    @PostMapping("/approve/supervisor/{leaveSubmissionId}")
-    public ResponseEntity<Object> approveSpv(@PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
+    @GetMapping("/approve/supervisor/{leaveSubmissionId}")
+    public ResponseEntity<Object> approveSpv(@PathVariable("leaveSubmissionId") String leaveSubmissionId,
+                                             @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
@@ -214,7 +225,7 @@ public class LeaveController {
         return ResponseEntity.ok(responseDto);
     }
 
-    @PostMapping("/reject/supervisor/{leaveSubmissionId}")
+    @GetMapping("/reject/supervisor/{leaveSubmissionId}")
     public ResponseEntity<Object> rejectSpv(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
@@ -226,6 +237,11 @@ public class LeaveController {
         leaveSubmission.setReason(dto.getReason());
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.REJECT_BY_SPV));
 
+        EmployeeLeave employeeLeave = employeeLeaveRepository.findByLeaveTypeAndEmployeeId(
+                leaveSubmission.getLeaveType().getLeaveTypeId(), leaveSubmission.getEmployee().getEmployeeId());
+        employeeLeave.setUsed(employeeLeave.getUsed() - leaveSubmission.getTotalDaysOff());
+        employeeLeave.setAvailable(employeeLeave.getAvailable() + leaveSubmission.getTotalDaysOff());
+
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
@@ -236,7 +252,7 @@ public class LeaveController {
         return ResponseEntity.ok(responseDto);
     }
 
-    @PostMapping("/approve/hrd/{leaveSubmissionId}")
+    @GetMapping("/approve/hrd/{leaveSubmissionId}")
     public ResponseEntity<Object> approveHrd(@PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
@@ -247,45 +263,35 @@ public class LeaveController {
         leaveSubmission.setHrdId(userAuditId);
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.APPROVED));
 
-        Sick sick = new Sick();
-        sick.setDescriptionHtml(leaveSubmission.getDescriptionHtml());
-        sick.setDescriptionText(leaveSubmission.getDescriptionText());
-        sick.setStartDate(leaveSubmission.getStartDate());
-        sick.setEndDate(leaveSubmission.getEndDate());
-        sick.setEmployee(leaveSubmission.getEmployee());
-        sick.setSubPartnerId(leaveSubmission.getSubPartnerId());
-        sick.setCreatedBy(userAuditId);
-        Sick result = sickRepository.save(sick);
-
-        int totalDaysOff = 0;
         Date actualDate = leaveSubmission.getStartDate();
-        while (actualDate.compareTo(leaveSubmission.getEndDate()) < 1) {
+        while (actualDate.compareTo(leaveSubmission.getEndDate()) < 0) {
             Calendar c = Calendar.getInstance();
             c.setTime(actualDate);
             int dayOfWeek =c.get(Calendar.DAY_OF_WEEK);
             if (dayOfWeek == 1 || dayOfWeek == 7) {
+                c.add(Calendar.DATE, 1);
+                actualDate = c.getTime();
                 continue;
             }
 
             Holiday holiday = holidayRepository.findByDate(actualDate).orElse(null);
             if (holiday != null) {
+                c.add(Calendar.DATE, 1);
+                actualDate = c.getTime();
                 continue;
             }
 
-            totalDaysOff++;
             Attendance attendance = new Attendance();
             attendance.setAttendanceDate(actualDate);
-            attendance.setSick(result);
+            attendance.setLeaveSubmission(leaveSubmission);
+            attendance.setEmployee(leaveSubmission.getEmployee());
             attendance.setCreatedBy(userAuditId);
-            attendance.setAttendanceType(attendanceTypeRepository.findByAttendanceTypeName(AttendanceTypeConstant.SICK));
+            attendance.setAttendanceType(attendanceTypeRepository.findByAttendanceTypeName(AttendanceTypeConstant.LEAVE));
             attendanceRepository.save(attendance);
 
             c.add(Calendar.DATE, 1);
             actualDate = c.getTime();
         }
-
-        leaveSubmission.setTotalDaysOff(totalDaysOff);
-        sickRepository.save(sick);
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
@@ -297,7 +303,7 @@ public class LeaveController {
         return ResponseEntity.ok(responseDto);
     }
 
-    @PostMapping("/reject/hrd/{leaveSubmissionId}")
+    @GetMapping("/reject/hrd/{leaveSubmissionId}")
     public ResponseEntity<Object> rejectHrd(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
@@ -308,6 +314,11 @@ public class LeaveController {
         leaveSubmission.setHrdId(userAuditId);
         leaveSubmission.setReason(dto.getReason());
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.REJECT_BY_HRD));
+
+        EmployeeLeave employeeLeave = employeeLeaveRepository.findByLeaveTypeAndEmployeeId(
+                leaveSubmission.getLeaveType().getLeaveTypeId(), leaveSubmission.getEmployee().getEmployeeId());
+        employeeLeave.setUsed(employeeLeave.getUsed() - leaveSubmission.getTotalDaysOff());
+        employeeLeave.setAvailable(employeeLeave.getAvailable() + leaveSubmission.getTotalDaysOff());
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
@@ -352,6 +363,8 @@ public class LeaveController {
         leaveResponseDto.setSubPartnerName(Objects.requireNonNull(employeeRepository.findById(leaveSubmission.getSubPartnerId()).orElse(null)).getEmployeeName());
         leaveResponseDto.setSubmissionStatusId(leaveSubmission.getSubmissionStatus().getSubmissionStatusId());
         leaveResponseDto.setSubmissionStatusName(leaveSubmission.getSubmissionStatus().getSubmissionStatusName());
+        leaveResponseDto.setLeaveTypeId(leaveSubmission.getLeaveType().getLeaveTypeId());
+        leaveResponseDto.setLeaveTypeName(leaveSubmission.getLeaveType().getLeaveTypeName());
         return leaveResponseDto;
     }
 

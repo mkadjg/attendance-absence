@@ -20,4 +20,6 @@ public class LeaveResponseDto {
     private String reason;
     private String submissionStatusId;
     private String submissionStatusName;
+    private String leaveTypeId;
+    private String leaveTypeName;
 }

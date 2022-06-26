@@ -4,7 +4,6 @@ import com.absence.models.Attendance;
 import com.absence.models.Employee;
 import com.absence.repositories.AttendanceRepository;
 import com.absence.repositories.EmployeeRepository;
-import com.netflix.discovery.converters.Auto;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -37,6 +36,7 @@ public class ReportServiceImpl implements ReportService {
         SimpleDateFormat monthAndYear = new SimpleDateFormat("MMM yyyy");
         SimpleDateFormat dayName = new SimpleDateFormat("EEEE");
         SimpleDateFormat hour = new SimpleDateFormat("HH:mm");
+        SimpleDateFormat date = new SimpleDateFormat("dd-MM-yyyy");
 
         Date startDate = getStartDate(month, year);
         Date endDate = getEndDate(month, year);
@@ -63,6 +63,12 @@ public class ReportServiceImpl implements ReportService {
             infoStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             infoStyle.setWrapText(true);
 
+            CellStyle bodyInfoRightStyle = workbook.createCellStyle();
+            bodyInfoRightStyle.setFont(infoFont);
+            bodyInfoRightStyle.setAlignment(HorizontalAlignment.RIGHT);
+            bodyInfoRightStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            bodyInfoRightStyle.setWrapText(true);
+
             Row infoRow = sheet.createRow(8);
             Cell infoCell = infoRow.createCell(1);
             assert employee != null;
@@ -87,6 +93,12 @@ public class ReportServiceImpl implements ReportService {
             bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             bodyStyle.setWrapText(true);
 
+            CellStyle bodyRightStyle = workbook.createCellStyle();
+            bodyRightStyle.setFont(bodyFont);
+            bodyRightStyle.setAlignment(HorizontalAlignment.RIGHT);
+            bodyRightStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            bodyRightStyle.setWrapText(true);
+
             CellStyle bodyCenterStyle = workbook.createCellStyle();
             bodyCenterStyle.setFont(bodyFont);
             bodyCenterStyle.setAlignment(HorizontalAlignment.CENTER);
@@ -105,13 +117,20 @@ public class ReportServiceImpl implements ReportService {
 
                 Date finalActualDate = actualDate;
                 Attendance attendance = attendances.stream()
-                        .findAny()
                         .filter(item -> finalActualDate.equals(item.getAttendanceDate()))
+                        .findAny()
                         .orElse(null);
+
+                System.out.println(attendances.size());
 
                 if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
                     totalDays++;
                 }
+
+                if (attendance != null) {
+                    System.out.println(attendance);
+                }
+                System.out.println(finalActualDate);
 
                 Cell bodyCell = bodyRow.createCell(1);
                 bodyCell.setCellValue(actualLocalDateTime.getDayOfMonth());
@@ -122,28 +141,55 @@ public class ReportServiceImpl implements ReportService {
                 bodyCell.setCellStyle(bodyStyle);
 
                 bodyCell = bodyRow.createCell(3);
-                bodyCell.setCellValue(attendance == null ? "-" : attendance.getProject().getProjectName());
+                if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
+                    bodyCell.setCellValue(attendance.getProject().getProjectName());
+                } else {
+                    bodyCell.setCellValue("-");
+                }
                 bodyCell.setCellStyle(bodyStyle);
 
-                bodyCell = bodyRow.createCell(4);
-                bodyCell.setCellValue(attendance == null ? "-" : attendance.getTaskText());
-                bodyCell.setCellStyle(bodyStyle);
+                if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
+                    bodyCell = bodyRow.createCell(4);
+                    bodyCell.setCellValue(attendance.getTaskText());
+                    bodyCell.setCellStyle(bodyStyle);
+                } else if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Sick")) {
+                    bodyCell = bodyRow.createCell(4);
+                    bodyCell.setCellValue(attendance.getSick().getDescriptionText());
+                    bodyCell.setCellStyle(bodyStyle);
+                } else if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Leave")) {
+                    bodyCell = bodyRow.createCell(4);
+                    bodyCell.setCellValue(attendance.getLeaveSubmission().getDescriptionText());
+                    bodyCell.setCellStyle(bodyStyle);
+                }
 
                 bodyCell = bodyRow.createCell(5);
-                bodyCell.setCellValue(attendance == null ? "-" : hour.format(attendance.getCheckInTime()));
+                if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
+                    bodyCell.setCellValue(hour.format(attendance.getCheckInTime()));
+                } else {
+                    bodyCell.setCellValue("-");
+                }
                 bodyCell.setCellStyle(bodyCenterStyle);
 
                 bodyCell = bodyRow.createCell(6);
-                bodyCell.setCellValue(attendance == null ? "-" : hour.format(attendance.getCheckOutTime()));
+                if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
+                    bodyCell.setCellValue(hour.format(attendance.getCheckOutTime()));
+                } else {
+                    bodyCell.setCellValue("-");
+
+                }
                 bodyCell.setCellStyle(bodyCenterStyle);
 
                 bodyCell = bodyRow.createCell(7);
-                bodyCell.setCellValue(attendance == null ? "-" : attendance.getLocation());
+                if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
+                    bodyCell.setCellValue(attendance.getLocation());
+                } else {
+                    bodyCell.setCellValue("-");
+                }
                 bodyCell.setCellStyle(bodyStyle);
 
                 bodyCell = bodyRow.createCell(8);
-                bodyCell.setCellStyle(bodyCenterStyle);
-                if (attendance != null) {
+                bodyCell.setCellStyle(bodyRightStyle);
+                if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
                     long hourDiffTime = attendance.getCheckOutTime().getTime() - attendance.getCheckInTime().getTime();
                     long hourDiff = (hourDiffTime / (1000 * 60 * 60)) % 24;
                     totalHours+=hourDiff;
@@ -164,7 +210,7 @@ public class ReportServiceImpl implements ReportService {
 
             summaryHoursCell = summaryHoursRow.createCell(8);
             summaryHoursCell.setCellValue(totalHours);
-            summaryHoursCell.setCellStyle(infoStyle);
+            summaryHoursCell.setCellStyle(bodyInfoRightStyle);
 
             Row summaryDaysRow = sheet.createRow(index+1);
             Cell summaryDaysCell = summaryDaysRow.createCell(7);
@@ -173,7 +219,7 @@ public class ReportServiceImpl implements ReportService {
 
             summaryDaysCell = summaryDaysRow.createCell(8);
             summaryDaysCell.setCellValue(totalDays);
-            summaryDaysCell.setCellStyle(infoStyle);
+            summaryDaysCell.setCellStyle(bodyInfoRightStyle);
 
             sheet.autoSizeColumn(1);
             sheet.autoSizeColumn(2);

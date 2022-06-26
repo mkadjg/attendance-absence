@@ -63,7 +63,7 @@ public class SickController {
         Sick result = sickRepository.save(sick);
 
         Date actualDate = dto.getStartDate();
-        while (actualDate.compareTo(dto.getEndDate()) < 1) {
+        while (actualDate.compareTo(dto.getEndDate()) < 0) {
             Calendar c = Calendar.getInstance();
             c.setTime(actualDate);
             int dayOfWeek =c.get(Calendar.DAY_OF_WEEK);
