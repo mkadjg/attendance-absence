@@ -15,4 +15,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
     @Query("select e from Employee e where e.userId =:userId")
     Optional<Employee> findByUserId(String userId);
 
+    @Query("select e from Employee e where e.jobTitle.division.divisionId=:divisionId and e.isSupervisor = 1")
+    List<Employee> findSupervisorByDivisionId(String divisionId);
+
+    @Query("select e from Employee e where e.jobTitle.division.divisionId=:divisionId")
+    List<Employee> findHRD(String divisionId);
+
 }

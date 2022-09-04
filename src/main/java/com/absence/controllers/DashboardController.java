@@ -61,7 +61,6 @@ public class DashboardController {
                 .build();
         return ResponseEntity.ok(responseDto);
     }
-
     @GetMapping("/people-off/{employeeId}")
     public ResponseEntity<Object> peopleOff(@PathVariable String employeeId) throws ResourceNotFoundException {
         Employee employee = employeeRepository.findById(employeeId).orElse(null);

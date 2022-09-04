@@ -57,7 +57,7 @@ public class EmployeeController {
         return ResponseEntity.ok(responseDto);
     }
 
-    @PutMapping("/create")
+    @PostMapping("/create")
     public ResponseEntity<Object> create(@RequestBody EmployeeRequestDto dto,
                                          @RequestHeader("user-audit-id") String userAuditId) {
         Employee employee = new Employee();

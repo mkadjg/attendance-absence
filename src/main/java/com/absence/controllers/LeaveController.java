@@ -9,6 +9,7 @@ import com.absence.dto.ResponseDto;
 import com.absence.exceptions.ResourceNotFoundException;
 import com.absence.models.*;
 import com.absence.repositories.*;
+import com.absence.services.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,9 @@ public class LeaveController {
 
     @Autowired
     EmployeeLeaveRepository employeeLeaveRepository;
+
+    @Autowired
+    NotificationService notificationService;
 
     @GetMapping("/find-all-employee")
     public ResponseEntity<Object> findAllEmployee(@RequestParam("employeeId") String employeeId,
@@ -135,7 +139,7 @@ public class LeaveController {
     }
 
     @PostMapping("/submission")
-    public ResponseEntity<Object> submission(@RequestBody LeaveRequestDto dto, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
+    public ResponseEntity<Object> submission(@RequestBody LeaveRequestDto dto, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
         Employee employee = employeeRepository.findById(dto.getEmployeeId()).orElse(null);
         if (employee == null) {
             throw new ResourceNotFoundException("Employee not found!");
@@ -193,6 +197,8 @@ public class LeaveController {
         leaveSubmission.setLeaveType(leaveTypeRepository.findById(dto.getLeaveTypeId()).orElse(null));
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.WAITING_APPROVAL_SPV));
 
+        notificationService.sendEmailSubmissionToSpv(leaveSubmission.getEmployee());
+
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
@@ -205,7 +211,7 @@ public class LeaveController {
 
     @GetMapping("/approve/supervisor/{leaveSubmissionId}")
     public ResponseEntity<Object> approveSpv(@PathVariable("leaveSubmissionId") String leaveSubmissionId,
-                                             @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
+                                             @RequestHeader("user-audit-id") String userAuditId) throws Exception {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
@@ -214,6 +220,8 @@ public class LeaveController {
         leaveSubmission.setUpdatedBy(userAuditId);
         leaveSubmission.setSupervisorId(userAuditId);
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.WAITING_APPROVAL_HRD));
+
+        notificationService.sendEmailSubmissionToHrd(leaveSubmission.getEmployee());
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
@@ -226,7 +234,7 @@ public class LeaveController {
     }
 
     @GetMapping("/reject/supervisor/{leaveSubmissionId}")
-    public ResponseEntity<Object> rejectSpv(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
+    public ResponseEntity<Object> rejectSpv(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
@@ -242,6 +250,8 @@ public class LeaveController {
         employeeLeave.setUsed(employeeLeave.getUsed() - leaveSubmission.getTotalDaysOff());
         employeeLeave.setAvailable(employeeLeave.getAvailable() + leaveSubmission.getTotalDaysOff());
 
+        notificationService.sendEmailReject(leaveSubmission, "Supervisor");
+
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
@@ -253,7 +263,7 @@ public class LeaveController {
     }
 
     @GetMapping("/approve/hrd/{leaveSubmissionId}")
-    public ResponseEntity<Object> approveHrd(@PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
+    public ResponseEntity<Object> approveHrd(@PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
@@ -293,6 +303,8 @@ public class LeaveController {
             actualDate = c.getTime();
         }
 
+        notificationService.sendEmailApprove(leaveSubmission, "HRD");
+
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
                 .status("success")
@@ -304,7 +316,7 @@ public class LeaveController {
     }
 
     @GetMapping("/reject/hrd/{leaveSubmissionId}")
-    public ResponseEntity<Object> rejectHrd(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws ResourceNotFoundException {
+    public ResponseEntity<Object> rejectHrd(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
@@ -319,6 +331,8 @@ public class LeaveController {
                 leaveSubmission.getLeaveType().getLeaveTypeId(), leaveSubmission.getEmployee().getEmployeeId());
         employeeLeave.setUsed(employeeLeave.getUsed() - leaveSubmission.getTotalDaysOff());
         employeeLeave.setAvailable(employeeLeave.getAvailable() + leaveSubmission.getTotalDaysOff());
+
+        notificationService.sendEmailReject(leaveSubmission, "HRD");
 
         ResponseDto responseDto = ResponseDto.builder()
                 .code(HttpStatus.OK.toString())
