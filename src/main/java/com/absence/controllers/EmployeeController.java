@@ -92,7 +92,6 @@ public class EmployeeController {
         if (employee != null) {
             employee.setEmployeeName(dto.getEmployeeName());
             employee.setEmployeeAddress(dto.getEmployeeAddress());
-            employee.setEmployeeNumber(dto.getEmployeeNumber());
             employee.setEmployeeBirthdate(dto.getEmployeeBirthdate());
             employee.setEmployeeBirthplace(dto.getEmployeeBirthplace());
             employee.setEmployeeEmail(dto.getEmployeeEmail());

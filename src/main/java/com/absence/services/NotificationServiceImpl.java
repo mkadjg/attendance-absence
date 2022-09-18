@@ -76,7 +76,7 @@ public class NotificationServiceImpl implements NotificationService {
         variables.put("endDate", leaveSubmission.getEndDate());
         variables.put("role", role);
 
-        String emailBody = emailService.generateHtmlEmailBody("leave-notification-approved.html", variables);
+        String emailBody = emailService.generateHtmlEmailBody("leave-notification-approve.html", variables);
         EmailPayload emailPayload = new EmailPayload();
         emailPayload.setSubject("Leave Submission Approved");
         emailPayload.setReceiver(leaveSubmission.getEmployee().getEmployeeEmail());

@@ -163,7 +163,7 @@ public class LeaveController {
             c.setTime(actualDate);
 
             List<LeaveSubmission> leaveSubmission = leaveSubmissionRepository.findByDateAndEmployeeId(actualDate, employee.getEmployeeId());
-            if (leaveSubmission != null) {
+            if (!leaveSubmission.isEmpty()) {
                 isTaken = true;
                 break;
             }
@@ -274,7 +274,7 @@ public class LeaveController {
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.APPROVED));
 
         Date actualDate = leaveSubmission.getStartDate();
-        while (actualDate.compareTo(leaveSubmission.getEndDate()) < 0) {
+        while (actualDate.compareTo(leaveSubmission.getEndDate()) < 1) {
             Calendar c = Calendar.getInstance();
             c.setTime(actualDate);
             int dayOfWeek =c.get(Calendar.DAY_OF_WEEK);
