@@ -158,15 +158,5 @@ public class EmployeeController {
         return ResponseEntity.ok(responseDto);
     }
 
-    @GetMapping("/partner")
-    public ResponseEntity<Object> partner(@RequestParam String employeeId, @RequestParam String divisionId) {
-        ResponseDto responseDto = ResponseDto.builder()
-                .code(HttpStatus.OK.toString())
-                .status("success")
-                .data(employeeRepository.findAllPartner(employeeId, divisionId))
-                .message("Successfully fetch data!")
-                .build();
 
-        return ResponseEntity.ok(responseDto);
-    }
 }

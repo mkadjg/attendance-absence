@@ -234,7 +234,7 @@ public class LeaveController {
     }
 
     @GetMapping("/reject/supervisor/{leaveSubmissionId}")
-    public ResponseEntity<Object> rejectSpv(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
+    public ResponseEntity<Object> rejectSpv(@PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
@@ -242,7 +242,6 @@ public class LeaveController {
 
         leaveSubmission.setUpdatedBy(userAuditId);
         leaveSubmission.setSupervisorId(userAuditId);
-        leaveSubmission.setReason(dto.getReason());
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.REJECT_BY_SPV));
 
         EmployeeLeave employeeLeave = employeeLeaveRepository.findByLeaveTypeAndEmployeeId(
@@ -316,7 +315,7 @@ public class LeaveController {
     }
 
     @GetMapping("/reject/hrd/{leaveSubmissionId}")
-    public ResponseEntity<Object> rejectHrd(@RequestBody RejectRequestDto dto, @PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
+    public ResponseEntity<Object> rejectHrd(@PathVariable("leaveSubmissionId") String leaveSubmissionId, @RequestHeader("user-audit-id") String userAuditId) throws Exception {
         LeaveSubmission leaveSubmission = leaveSubmissionRepository.findById(leaveSubmissionId).orElse(null);
         if (leaveSubmission == null) {
             throw new ResourceNotFoundException("Leave Submission not found!");
@@ -324,7 +323,6 @@ public class LeaveController {
 
         leaveSubmission.setUpdatedBy(userAuditId);
         leaveSubmission.setHrdId(userAuditId);
-        leaveSubmission.setReason(dto.getReason());
         leaveSubmission.setSubmissionStatus(submissionStatusRepository.findBySubmissionStatusName(SubmissionStatusConstants.REJECT_BY_HRD));
 
         EmployeeLeave employeeLeave = employeeLeaveRepository.findByLeaveTypeAndEmployeeId(
@@ -369,6 +367,7 @@ public class LeaveController {
         LeaveResponseDto leaveResponseDto = new LeaveResponseDto();
         leaveResponseDto.setLeaveSubmissionId(leaveSubmission.getLeaveSubmissionId());
         leaveResponseDto.setReason(leaveSubmission.getReason());
+        leaveResponseDto.setEmployeeName(leaveSubmission.getEmployee().getEmployeeName());
         leaveResponseDto.setDescriptionHtml(leaveSubmission.getDescriptionHtml());
         leaveResponseDto.setDescriptionText(leaveSubmission.getDescriptionText());
         leaveResponseDto.setStartDate(leaveSubmission.getStartDate());

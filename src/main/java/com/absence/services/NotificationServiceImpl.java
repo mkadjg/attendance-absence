@@ -1,6 +1,5 @@
 package com.absence.services;
 
-import com.absence.models.Attendance;
 import com.absence.models.Employee;
 import com.absence.models.LeaveSubmission;
 import com.absence.payloads.EmailPayload;
@@ -91,7 +90,7 @@ public class NotificationServiceImpl implements NotificationService {
         variables.put("endDate", leaveSubmission.getEndDate());
         variables.put("role", role);
 
-        String emailBody = emailService.generateHtmlEmailBody("leave-notification-rejected.html", variables);
+        String emailBody = emailService.generateHtmlEmailBody("leave-notification-reject.html", variables);
         EmailPayload emailPayload = new EmailPayload();
         emailPayload.setSubject("Leave Submission Approved");
         emailPayload.setReceiver(leaveSubmission.getEmployee().getEmployeeEmail());

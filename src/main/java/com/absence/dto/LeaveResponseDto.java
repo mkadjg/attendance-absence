@@ -13,6 +13,7 @@ public class LeaveResponseDto {
     private String leaveSubmissionId;
     private Date startDate;
     private Date endDate;
+    private String employeeName;
     private String descriptionHtml;
     private String descriptionText;
     private String subPartnerId;
