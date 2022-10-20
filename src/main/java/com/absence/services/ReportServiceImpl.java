@@ -121,16 +121,9 @@ public class ReportServiceImpl implements ReportService {
                         .findAny()
                         .orElse(null);
 
-                System.out.println(attendances.size());
-
                 if (attendance != null && attendance.getAttendanceType().getAttendanceTypeName().equals("Present")) {
                     totalDays++;
                 }
-
-                if (attendance != null) {
-                    System.out.println(attendance);
-                }
-                System.out.println(finalActualDate);
 
                 Cell bodyCell = bodyRow.createCell(1);
                 bodyCell.setCellValue(actualLocalDateTime.getDayOfMonth());
